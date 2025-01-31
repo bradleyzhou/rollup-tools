@@ -1,0 +1,19 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# testing
+coverage
+
+# build artifacts
+dist
+
+# filesystem
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+
+# env and secrets
+.env
+*.pem
