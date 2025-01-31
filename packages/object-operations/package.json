@@ -1,0 +1,42 @@
+{
+  "name": "object-operations",
+  "version": "0.5.0",
+  "description": "tools and operations for javascript object",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/es/index.js",
+  "type": "module",
+  "exports": {
+    "types": "./dist/types/index.d.ts",
+    "import": "./dist/es/index.js",
+    "default": "./dist/cjs/index.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bradleyzhou/rollup-tools.git"
+  },
+  "keywords": [
+    "object",
+    "tools"
+  ],
+  "author": "Bradley Zhou",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bradleyzhou/rollup-tools/issues"
+  },
+  "homepage": "https://github.com/bradleyzhou/rollup-tools#readme",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "rollup": "^4.30.1",
+    "tslib": "^2.8.1"
+  },
+  "dependencies": {
+    "just-clone": "^6.2.0"
+  }
+}
