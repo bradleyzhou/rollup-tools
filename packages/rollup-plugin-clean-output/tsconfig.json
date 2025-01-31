@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.strict.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "lib": ["ES2019"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2019"
+  },
+  "include": ["src"]
+}
