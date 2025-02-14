@@ -1,5 +1,5 @@
 import clone from 'just-clone';
-import { AnyMap, AnySet, isArray, isMap, isPlainObject, isSet } from './check';
+import { AnyMap, PrimitiveSet, isArray, isMap, isPlainObject, isSet } from './check';
 import { DeepPartial } from './types';
 
 export { clone };
@@ -45,14 +45,27 @@ function diffMapKeys(a: AnyMap, b: AnyMap): string[] {
   return aMinusB;
 }
 
-function diffSetKeys(a: AnySet, b: AnySet): string[] {
-  const aMinusB = [] as string[];
-  for (const v of a) {
-    if (!b.has(v)) {
-      aMinusB.push(v);
+function diffSetValues(a: PrimitiveSet, b: PrimitiveSet) {
+  const aMinusB = new Set() as PrimitiveSet;
+  const bMinusA = new Set() as PrimitiveSet;
+
+  const intersection = new Set() as PrimitiveSet;
+
+  for (const va of a) {
+    if (b.has(va)) {
+      intersection.add(va);
+    } else {
+      aMinusB.add(va);
     }
   }
-  return aMinusB;
+
+  for (const vb of b) {
+    if (!intersection.has(vb)) {
+      bMinusA.add(vb);
+    }
+  }
+
+  return { aMinusB, bMinusA, intersection };
 }
 
 function assign(target: any, source: any, option?: Partial<AssignOption>) {
@@ -82,7 +95,7 @@ function assign(target: any, source: any, option?: Partial<AssignOption>) {
       }
       // handle extra items in target
       if (mode === 'replace') {
-        for (let i = source.length; i < target.length; i++) {
+        for (let i = source.length, tl = target.length; i < tl; i++) {
           target.pop();
         }
       }
@@ -119,16 +132,21 @@ function assign(target: any, source: any, option?: Partial<AssignOption>) {
     }
   } else {
     // desc === 'both-set'
-    for (const v of source as AnySet) {
-      const vDesc = describeAssignment(target.has(v) ? v : undefined, v);
-      if (vDesc === 'no-match') {
-        target.add(v);
-      } else {
-        assign(target.has(v), v, { mode, desc: vDesc });
-      }
+    // Note: Only works well with primitive values (string/number/boolean) as Set elements
+    // since object references will be shared between source and target Sets.
+    const { aMinusB: inTargetNotSource, bMinusA: inSourceNotTarget } = diffSetValues(target, source);
+
+    for (const v of inSourceNotTarget) {
+      // these are the values in source but not in target
+      // @type-note: clone() can handle primitive fine
+      target.add(clone(v as any));
     }
+
+    // for intersection that in both, no need to go deep,
+    // because if is not primitive, they share the same object ref (although not recommended)
+
     if (mode === 'replace') {
-      for (const v of diffSetKeys(target, source)) {
+      for (const v of inTargetNotSource) {
         target.delete(v);
       }
     }
@@ -139,6 +157,10 @@ function assign(target: any, source: any, option?: Partial<AssignOption>) {
  * Merge `source` to `target`, mutating `target`. `source` is untouched.
  *
  * Object keys that are both in `source` and `target` are overriden. Arrays are merged by index.
+ *
+ * @remarks
+ * When merging Sets, it's recommended to use primitive values (string/number/boolean) as elements
+ * since object references will be shared between source and target Sets.
  */
 export function merge<Target, Source>(target: Target, source: Source): Target & Source {
   assign(target, source);
@@ -149,6 +171,10 @@ export function merge<Target, Source>(target: Target, source: Source): Target & 
  * Merge `source` to `target` with append mode, mutating `target`. `source` is untouched.
  *
  * Object keys that are both in `source` and `target` are overriden. Arrays are appended to `target`.
+ *
+ * @remarks
+ * When appending to Sets, it's recommended to use primitive values (string/number/boolean) as elements
+ * since object references will be shared between source and target Sets.
  */
 export function append<Target, Source>(target: Target, source: Source): Target & Source {
   assign(target, source, { mode: 'append' });
@@ -159,6 +185,10 @@ export function append<Target, Source>(target: Target, source: Source): Target &
  * Merge `source` to `target` with replace mode, mutating `target`. `source` is untouched.
  *
  * Object keys that are not in `source` but in `target` are deleted. Arrays are shrinked if `source` is shorter.
+ *
+ * @remarks
+ * When replacing Sets, it's recommended to use primitive values (string/number/boolean) as elements
+ * since object references will be shared between source and target Sets.
  */
 export function replace<Target, Source>(target: Target, source: Source): Source {
   assign(target, source, { mode: 'replace' });
@@ -169,6 +199,9 @@ export function replace<Target, Source>(target: Target, source: Source): Source 
  * Update `target` with `source`, mutating `target`. `source` is untouched.
  *
  * An alias of `merge()`.
+ *
+ * @remarks
+ * See {@link merge} for details about Set element handling recommendations.
  */
 export function update<Data>(target: Data, source: DeepPartial<Data>): Data {
   assign(target, source);

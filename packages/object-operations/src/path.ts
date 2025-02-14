@@ -4,6 +4,9 @@ import type { Gettable, Shift } from './types';
 export type PathKey = string | number;
 export type ObjectPath = PathKey[];
 
+export const WILDCARD = '*';
+export const WILDCARD_NUMBER = Number.POSITIVE_INFINITY;
+
 export function parse(str: string): ObjectPath {
   const path = [] as ObjectPath;
 
@@ -23,7 +26,7 @@ export function parse(str: string): ObjectPath {
       }
       bracket = false;
       if (key) {
-        path.push(key === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(key));
+        path.push(key === WILDCARD ? WILDCARD_NUMBER : Number.parseInt(key));
         key = '';
       }
     } else if (c === '.') {
@@ -58,8 +61,8 @@ export function stringify(path: ObjectPath, option: Partial<StringifyOption> = {
 
   for (const part of path) {
     if (isNumber(part)) {
-      if (part === Number.POSITIVE_INFINITY) {
-        result += '[*]';
+      if (part === WILDCARD_NUMBER) {
+        result += '[' + WILDCARD + ']';
       } else {
         result += `[${part}]`;
       }
@@ -93,19 +96,18 @@ export function get(obj: any, path: PathValueGettable, option: Partial<GetOption
   const p = getFromPathValue(path);
   const { fallback = undefined, start = 0, end = p.length } = option;
   let curr = obj;
-  for (let i = start; i < end; i++) {
-    const key = p[i];
-    if (curr == null) {
-      return fallback;
+  try {
+    for (let i = start; i < end; i++) {
+      const key = p[i];
+      if (curr == null) {
+        return fallback;
+      }
+      curr = curr[key];
     }
-    curr = curr[key];
-  }
-
-  if (curr == null && fallback != null) {
+    return curr ?? fallback;
+  } catch {
     return fallback;
   }
-
-  return curr;
 }
 
 export function bound(obj: any) {

@@ -37,6 +37,11 @@ export function isPrimitive(value: unknown): value is Primitive {
   return typeof value !== 'object' && typeof value !== 'function';
 }
 
+/**
+ * A set with primtive values.
+ */
+export type PrimitiveSet = Set<Primitive>;
+
 export function isArray(value: unknown): value is any[] {
   return Array.isArray(value);
 }
