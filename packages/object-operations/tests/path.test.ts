@@ -1,4 +1,4 @@
-import { parse, stringify, get, bound } from '../src/path';
+import { parse, stringify, get, bound, match } from '../src/path';
 
 describe('path utilities', () => {
   describe('parse', () => {
@@ -66,6 +66,53 @@ describe('path utilities', () => {
 
     test('should handle partial paths', () => {
       expect(get(obj, 'x.a.b.d.x', { start: 1, end: 4 })).toEqual([1, 2, 3]);
+    });
+  });
+
+  describe('match', () => {
+    test('should match exact paths', () => {
+      expect(match(['a', 'b', 'c'], [['a', 'b', 'c']])).toBe(true);
+      expect(match([1, 2, 3], [[1, 2, 3]])).toBe(true);
+    });
+
+    test('should handle string wildcards', () => {
+      expect(match(['a', 'b', 'c'], [['a', '*']])).toBe(true);
+      expect(match(['a', 'b', 'c'], [['*', 'b', 'c']])).toBe(false);
+      expect(match(['a', 'b'], [['a', 'b', '*']])).toBe(true);
+    });
+
+    test('should handle numeric wildcards', () => {
+      expect(match([1, 2, 3], [[1, Number.POSITIVE_INFINITY]])).toBe(true);
+      expect(match([1, 2], [[1, 2, Number.POSITIVE_INFINITY]])).toBe(true);
+      expect(match([1, 2, 3], [[Number.POSITIVE_INFINITY]])).toBe(true);
+    });
+
+    test('should handle mixed type paths', () => {
+      expect(match(['a', 1, 'b'], [['a', 1, '*']])).toBe(true);
+      expect(match(['a', 1, 'b'], [['a', Number.POSITIVE_INFINITY, 'b']])).toBe(false);
+    });
+
+    test('should handle multiple rules', () => {
+      const rules = [
+        ['a', 'b'],
+        ['c', '*'],
+        [1, Number.POSITIVE_INFINITY],
+      ];
+      expect(match(['a', 'b'], rules)).toBe(true);
+      expect(match(['c', 'd'], rules)).toBe(true);
+      expect(match([1, 2, 3], rules)).toBe(true);
+      expect(match(['x', 'y'], rules)).toBe(false);
+    });
+
+    test('should reject invalid wildcard positions', () => {
+      expect(match(['a', 'b', 'c'], [['a', '*', 'c']])).toBe(false);
+      expect(match([1, 2, 3], [[1, Number.POSITIVE_INFINITY, 3]])).toBe(false);
+    });
+
+    test('should handle edge cases', () => {
+      expect(match([], [[]])).toBe(true);
+      expect(match(['*'], [['*']])).toBe(true);
+      expect(match([Number.POSITIVE_INFINITY], [[Number.POSITIVE_INFINITY]])).toBe(true);
     });
   });
 

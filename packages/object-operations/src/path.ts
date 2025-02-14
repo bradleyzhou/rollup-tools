@@ -1,4 +1,4 @@
-import { isFunction, isNumber } from './check';
+import { isFunction, isNumber, isString } from './check';
 import type { Gettable, Shift } from './types';
 
 export type PathKey = string | number;
@@ -108,6 +108,56 @@ export function get(obj: any, path: PathValueGettable, option: Partial<GetOption
   } catch {
     return fallback;
   }
+}
+
+export function match(targetPath: ObjectPath, rules: ObjectPath[]): boolean {
+  // Track active rules that still match up to current depth
+  const matched = new Set(rules);
+
+  for (let i = 0; i < targetPath.length; i++) {
+    const targetKey = targetPath[i];
+
+    for (const rule of matched) {
+      const ruleKey = rule[i];
+      const isLastRuleKey = i === rule.length - 1;
+
+      // wildcard match, and can early return
+      // note that wildcards must be the last key of the rule
+      if (isNumber(targetKey) && ruleKey === WILDCARD_NUMBER && isLastRuleKey) return true;
+      if (isString(targetKey) && ruleKey === WILDCARD && isLastRuleKey) return true;
+
+      if (!isLastRuleKey && (ruleKey === WILDCARD || ruleKey === WILDCARD_NUMBER)) {
+        // invalid wildcard rule, not ending with wildcard, no need to keep looking at this rule
+        matched.delete(rule);
+      }
+
+      if (ruleKey == null || targetKey !== ruleKey) {
+        // not matching for this rule at position i, no need to keep looking at this rule
+        matched.delete(rule);
+      }
+
+      // match, need to continue looking to next path key
+    }
+
+    // early return if no rules left
+    if (matched.size === 0) return false;
+  }
+
+  // process longer rules
+  for (const rule of matched) {
+    // exact match
+    if (rule.length === targetPath.length) return true;
+
+    // special tail wildcard match
+    if (
+      rule.length === targetPath.length + 1 &&
+      (rule[rule.length - 1] === WILDCARD || rule[rule.length - 1] === WILDCARD_NUMBER)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function bound(obj: any) {

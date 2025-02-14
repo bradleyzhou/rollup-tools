@@ -52,3 +52,10 @@ export function isArray(value: unknown): value is any[] {
 export function isNumber(value: unknown): value is number {
   return typeof value === 'number' && !Number.isNaN(value);
 }
+
+/**
+ * Check if `value` is a string. Not pass if it is created via `new String()`.
+ */
+export function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
